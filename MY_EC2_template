@@ -1,0 +1,35 @@
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. Linked to AWS Parameter
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+Resources:
+  Webserver01:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      AvailabilityZone: ap-southeast-1a
+      ImageId: ami-043afc2b8b6cfba5c
+      InstanceType: t2.micro
+      SecurityGroups:
+        - !Ref WebSecurityGroup
+      KeyName: !Ref KeyName
+  Webserver02:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      AvailabilityZone: ap-southeast-1b
+      ImageId: ami-043afc2b8b6cfba5c
+      InstanceType: t2.micro
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access and HTTP access via port 22 & 80 resp
+      GroupName: WebSGTest
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
