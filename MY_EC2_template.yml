@@ -1,40 +1,45 @@
 Parameters:
   KeyName:
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. Linked to AWS Parameter
-    Type: AWS::EC2::KeyPair::KeyName
+    Description: >-
+      Name of an existing EC2 KeyPair to enable SSH access to the instances.
+      Linked to AWS Parameter
+    Type: 'AWS::EC2::KeyPair::KeyName'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
 Resources:
   Webserver01:
     Type: 'AWS::EC2::Instance'
     Properties:
-      AvailabilityZone: ap-southeast-1a
       ImageId: ami-043afc2b8b6cfba5c
       InstanceType: t2.micro
-      SecurityGroups:
-        - !Ref WebSecurityGroup
+      SubnetId:
+        Ref: PublicSN
       KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - Ref: WebSecurityGroup
       Tags:
-        - Key: "Name"
-          Value: "WebServer01"
+        - Key: Name
+          Value: WebServer01
   Webserver02:
     Type: 'AWS::EC2::Instance'
     Properties:
-      AvailabilityZone: ap-southeast-1b
       ImageId: ami-043afc2b8b6cfba5c
       InstanceType: t2.micro
-      SecurityGroups:
-        - !Ref WebSecurityGroup
+      SubnetId:
+        Ref: PublicSN
       KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - Ref: WebSecurityGroup
       Tags:
-        - Key: "Name"
-          Value: "WebServer02"
+        - Key: Name
+          Value: WebServer02
   WebSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+    Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Enable SSH access and HTTP access via port 22 & 80 resp
-      GroupName: WebSGTest
+      VpcId:
+        Ref: MyVPC
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
+        - CidrIp: 192.168.0.124/32
           FromPort: 22
           IpProtocol: tcp
           ToPort: 22
@@ -43,30 +48,65 @@ Resources:
           IpProtocol: tcp
           ToPort: 80
   MyVPC:
-    Type: AWS::EC2::VPC
+    Type: 'AWS::EC2::VPC'
     Properties:
       CidrBlock: 10.0.0.0/26
       Tags:
-       - Key: "Name"
-         Value: "MyVPC"
+        - Key: Name
+          Value: MyVPC
   PublicSN:
-    Type: AWS::EC2::Subnet
+    Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId:
         Ref: MyVPC
       CidrBlock: 10.0.0.0/28
-      AvailabilityZone: "ap-southeast-1a"
-      MapPublicIpOnLaunch: True
+      AvailabilityZone: ap-southeast-1a
+      MapPublicIpOnLaunch: true
       Tags:
-       - Key: "Name"
-         Value: "Public_Subnet"
+        - Key: Name
+          Value: Public_Subnet
   PrivateSN:
-    Type: AWS::EC2::Subnet
+    Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId:
-       Ref: MyVPC
+        Ref: MyVPC
       CidrBlock: 10.0.0.16/28
-      AvailabilityZone: "ap-southeast-1b"
+      AvailabilityZone: ap-southeast-1b
       Tags:
-       - Key: "Name"
-         Value: "Private_Subnet"
+        - Key: Name
+          Value: Private_Subnet
+  myPublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId:
+        Ref: MyVPC
+      Tags:
+        - Key: Name
+          Value: MyPublicRouteTable
+  myPublicRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      GatewayId:
+        Ref: myIGW
+      RouteTableId:
+        Ref: myPublicRoute
+  myIGW:
+  Type: 'AWS::EC2::InternetGateway'
+  Properties:
+    Tags:
+      - Key: Name
+        Value: myIGW
+  SubnetRouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: myPublicRouteTable
+      SubnetId:
+        Ref: PublicSN
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: MyVPC
+      InternetGatewayId:
+        Ref: myIGW
